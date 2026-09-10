@@ -13,6 +13,7 @@ export interface WeblogPublisherSettings {
   renamePages: boolean;
   slugWordCount: number;
   weblogBaseUrl: string;
+  weblogPathFormatOverride?: string;
   enableAutoOrganize?: boolean;
   autoOrganizeBasePath?: string;
   weblogImportPath?: string;
@@ -67,6 +68,7 @@ export const DEFAULT_SETTINGS: CombinedSettings = {
   renamePages: false,
   slugWordCount: 5,
   weblogBaseUrl: "",
+  weblogPathFormatOverride: "",
   enableAutoOrganize: false,
   autoOrganizeBasePath: "",
   weblogImportPath: "",

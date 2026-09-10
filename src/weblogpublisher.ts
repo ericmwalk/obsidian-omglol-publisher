@@ -809,7 +809,7 @@ private resolveWikilinks(body: string, sourceFilePath: string, pathFormat: strin
         || `https://${this.settings.username}.weblog.lol`;
       const isPage = fm?.type?.toLowerCase() === "page";
       const datePath = !isPage && fm?.date ? this.applyPhpDateFormat(pathFormat, String(fm.date)) : "";
-      const url = datePath ? `${base}${datePath}${slug}` : `${base}/${slug}`;
+      const url = this.joinUrlSegments(base, datePath, slug);
       return `[${displayText}](${url})`;
     }
 
@@ -834,6 +834,10 @@ private resolveWikilinks(body: string, sourceFilePath: string, pathFormat: strin
 private async getPostPathFormat(): Promise<string> {
   const defaultFormat = "/Y/m/d/";
 
+  // 0. An explicit override always wins and skips the vault/API lookups below.
+  const override = this.settings.weblogPathFormatOverride?.trim();
+  if (override) return override;
+
   // 1. Check vault for a weblog configuration note
   const configFile = this.app.vault.getAllLoadedFiles().find((f): f is TFile => {
     if (!(f instanceof TFile)) return false;
@@ -853,23 +857,49 @@ private async getPostPathFormat(): Promise<string> {
 
   // 2. Fetch from API if not found in vault
   try {
-    const resp = await requestUrl({
-      method: "GET",
-      url: `https://api.omg.lol/address/${this.settings.username}/weblog/configuration`,
-      headers: {
-        Authorization: `Bearer ${this.settings.apiToken || this.settings.token}`,
-      },
-    });
-    const configText: string = resp.json?.response?.configuration ?? "";
-    if (configText) {
-      const match = configText.match(/^Post path format:\s*(.+)$/m);
-      if (match?.[1]?.trim()) return match[1].trim();
-    }
+    const format = await this.fetchPostPathFormatFromApi();
+    if (format) return format;
   } catch {
     // fall through to default
   }
 
   return defaultFormat;
+}
+
+// Also used by the settings tab's "Verify against omg.lol" button, so it's public.
+// The /weblog/configuration endpoint returns `configuration` as an object
+// ({ object, json, raw }), not a plain string — earlier code treated it as a
+// string and called .match() on it, which threw and was silently swallowed,
+// so this lookup always fell back to the hardcoded default.
+public async fetchPostPathFormatFromApi(): Promise<string | null> {
+  const resp = await requestUrl({
+    method: "GET",
+    url: `https://api.omg.lol/address/${this.settings.username}/weblog/configuration`,
+    headers: {
+      Authorization: `Bearer ${this.settings.apiToken || this.settings.token}`,
+    },
+  });
+
+  const configuration = resp.json?.response?.configuration;
+
+  const fromObject = configuration?.object?.["post-path-format"];
+  if (typeof fromObject === "string" && fromObject.trim()) return fromObject.trim();
+
+  // Defensive fallback in case the API's shape ever changes.
+  const raw: string = typeof configuration === "string" ? configuration : configuration?.raw ?? "";
+  const match = raw.match(/^Post path format:\s*(.+)$/m);
+  return match?.[1]?.trim() || null;
+}
+
+// Joins a base URL with any number of path segments using a single slash
+// between each, regardless of leading/trailing slashes already present —
+// so a flat/empty format (e.g. "/") can't produce a doubled "//" in the URL.
+private joinUrlSegments(base: string, ...segments: string[]): string {
+  const trimmedBase = base.replace(/\/+$/, "");
+  const parts = segments
+    .map(s => s.replace(/^\/+|\/+$/g, ""))
+    .filter(Boolean);
+  return [trimmedBase, ...parts].join("/");
 }
 
 private applyPhpDateFormat(format: string, dateStr: string): string {

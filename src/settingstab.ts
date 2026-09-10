@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, setIcon, FuzzySuggestModal, TFolder } from "obsidian";
+import { App, PluginSettingTab, Setting, setIcon, FuzzySuggestModal, TFolder, Notice } from "obsidian";
 import OmglolPublish from "./main";
 
 
@@ -264,6 +264,49 @@ export class SettingsTab extends PluginSettingTab {
             .onChange(async (value) => {
               this.plugin.settings.weblogBaseUrl = value.trim().replace(/\/$/, "");
               await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName("Post path format override")
+        .setDesc('Blank = auto-detect. Otherwise set your own, e.g. /Y/m/d/, or "/" for a flat structure.')
+        .addText(text =>
+          text
+            .setPlaceholder("/Y/m/d/")
+            .setValue(this.plugin.settings.weblogPathFormatOverride || "")
+            .onChange(async (value) => {
+              this.plugin.settings.weblogPathFormatOverride = value.trim();
+              await this.plugin.saveSettings();
+            })
+        )
+        .addButton(button =>
+          button
+            .setButtonText("Verify against omg.lol")
+            .onClick(async () => {
+              const publisher = this.plugin.weblogPublisher;
+              if (!publisher) {
+                new Notice("Enable weblog publishing first.");
+                return;
+              }
+              button.setDisabled(true);
+              try {
+                const live = await publisher.fetchPostPathFormatFromApi();
+                const override = this.plugin.settings.weblogPathFormatOverride?.trim();
+                if (!live) {
+                  new Notice("Couldn't read a post path format from omg.lol.");
+                } else if (!override) {
+                  new Notice(`omg.lol reports "${live}" (no override set, so this is already what gets used).`);
+                } else if (live === override) {
+                  new Notice(`✅ Matches your account's configuration ("${live}").`);
+                } else {
+                  new Notice(`⚠️ Your account's configuration is "${live}", but your override is "${override}".`);
+                }
+              } catch (error) {
+                console.error("Failed to verify post path format:", error);
+                new Notice(`Failed to reach omg.lol to verify: ${error instanceof Error ? error.message : error}`);
+              } finally {
+                button.setDisabled(false);
+              }
             })
         );
 

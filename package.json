@@ -1,6 +1,6 @@
 {
 	"name": "omglol-publish",
-	"version": "2.8.0",
+	"version": "2.8.1",
 	"description": "Allows you to post to weblogs.lol, status.lol, some.pics and paste.lol from Obsidian.",
 	"main": "main.js",
 	"scripts": {
