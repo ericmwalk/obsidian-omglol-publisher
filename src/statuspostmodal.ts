@@ -44,7 +44,7 @@ export class StatusPostModal extends Modal {
       }
     });
 
-    activeWindow.setTimeout(() => textarea.focus(), 100);
+    window.setTimeout(() => textarea.focus(), 100);
 
     new Setting(contentEl)
       .setName("Post to social.lol")

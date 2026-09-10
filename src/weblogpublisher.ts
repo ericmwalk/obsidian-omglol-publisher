@@ -2,6 +2,27 @@ import { App, MarkdownView, Notice, Plugin, TFile, TFolder, requestUrl, normaliz
 import { CombinedSettings } from "./types";
 import { WeblogFrontmatterModal, WeblogFrontmatterValues } from "./weblogfrontmattermodal";
 
+// Shape of an entry as returned by GET /weblog/entries.
+interface WeblogApiEntry {
+  entry?: string;
+  date?: string | number;
+  metadata?: unknown;
+  title?: string;
+  body?: string;
+  source?: string;
+  status?: string;
+  type?: string;
+}
+
+// Loosely-typed frontmatter fields used to pre-fill the "fix your frontmatter" prompt.
+interface PromptFrontmatterInput {
+  title?: string;
+  date?: string;
+  tags?: unknown;
+  status?: string;
+  type?: string;
+}
+
 export class WeblogPublisher {
   constructor(
     private app: App,
@@ -101,7 +122,7 @@ export class WeblogPublisher {
     const apiStatus = metadata.status?.trim();
     const statusLine = apiStatus ? `Status: ${apiStatus}\n` : "";
 
-    const templateKey = Object.keys(metadata as object).find((k: string) => k.toLowerCase() === "template");
+    const templateKey = Object.keys(metadata).find((k: string) => k.toLowerCase() === "template");
     const template = templateKey ? String(metadata[templateKey]).trim() : undefined;
     const templateLine = template ? `Template: ${template}\n` : "";
 
@@ -206,7 +227,7 @@ export class WeblogPublisher {
       const apiStatus = metadata.status?.trim();
       const statusLine = apiStatus ? `Status: ${apiStatus}\n` : "";
 
-      const templateKey = Object.keys(metadata as object).find((k: string) => k.toLowerCase() === "template");
+      const templateKey = Object.keys(metadata).find((k: string) => k.toLowerCase() === "template");
       const template = templateKey ? String(metadata[templateKey]).trim() : undefined;
       const templateLine = template ? `Template: ${template}\n` : "";
 
@@ -272,8 +293,7 @@ export class WeblogPublisher {
     }
     basePath = basePath.replace(/\/$/, "");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let entries: any[];
+    let entries: WeblogApiEntry[];
     try {
       const response = await requestUrl({
         method: "GET",
@@ -333,8 +353,7 @@ export class WeblogPublisher {
 
       const isPage = (entry.type ?? "").toLowerCase() === "page";
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fm: Record<string, any> = { entry: entryId, slug, title, date: dateStr, status };
+      const fm: Record<string, unknown> = { entry: entryId, slug, title, date: dateStr, status };
       if (isPage) fm.type = "page";
       if (tags.length) fm.tags = tags;
 
@@ -411,7 +430,7 @@ export class WeblogPublisher {
         });
 
       modal.open();
-      activeWindow.setTimeout(() => input.focus(), 50);
+      window.setTimeout(() => input.focus(), 50);
     });
   }
 
@@ -455,7 +474,7 @@ export class WeblogPublisher {
 
         onClose(): void {
           // Only resolve null if user closed manually (no selection)
-          activeWindow.setTimeout(() => resolve(null), 10);
+          window.setTimeout(() => resolve(null), 10);
         }
       }
 
@@ -578,8 +597,7 @@ export class WeblogPublisher {
 
   // The API has been observed returning entry.metadata as either a parsed
   // object or a JSON-encoded string, depending on endpoint — normalize both.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private parseEntryMetadata(metadata: unknown): Record<string, any> {
+  private parseEntryMetadata(metadata: unknown): Record<string, unknown> {
     if (!metadata) return {};
     if (typeof metadata === "string") {
       try {
@@ -592,8 +610,7 @@ export class WeblogPublisher {
     return typeof metadata === "object" ? { ...metadata } : {};
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private buildExtraMetadataLines(metadata: Record<string, any>): string {
+  private buildExtraMetadataLines(metadata: Record<string, unknown>): string {
     let lines = "";
     for (const key of Object.keys(metadata)) {
       if (this.reservedFrontmatterKeys.has(key.toLowerCase())) continue;
@@ -664,13 +681,12 @@ export class WeblogPublisher {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private promptForFrontmatter(file: TFile, _content: string, metadata?: any) {
+  private promptForFrontmatter(file: TFile, _content: string, metadata?: PromptFrontmatterInput) {
     const existing: Partial<WeblogFrontmatterValues & { type?: string }> = {
       title: metadata?.title,
       date: metadata?.date,
-      tags: Array.isArray(metadata?.tags) ? metadata.tags : [],
-      status: metadata?.status,
+      tags: Array.isArray(metadata?.tags) ? (metadata?.tags as string[]) : [],
+      status: metadata?.status as WeblogFrontmatterValues["status"] | undefined,
       type: metadata?.type,
     };
 
@@ -690,7 +706,7 @@ export class WeblogPublisher {
         else delete fm.tags;
       });
 
-      activeWindow.setTimeout(() => { void this.publishCurrentNote(); }, 300);
+      window.setTimeout(() => { void this.publishCurrentNote(); }, 300);
     }, existing).open();
   }
 
@@ -792,7 +808,7 @@ private resolveWikilinks(body: string, sourceFilePath: string, pathFormat: strin
   const unresolvedPublished: string[] = [];
   // Match [[file]], [[file|alias]], [[file#heading]], [[file#heading|alias]]
   // Negative lookbehind excludes ![[...]] image embeds
-  const wikilinkRegex = /(?<!\!)\[\[([^\]#|]+)(?:#[^\]|]*)?\|?([^\]]*)\]\]/g;
+  const wikilinkRegex = /(?<!!)\[\[([^\]#|]+)(?:#[^\]|]*)?\|?([^\]]*)\]\]/g;
 
   const resolved = body.replace(wikilinkRegex, (_match, filename, alias) => {
     const name = filename.trim();

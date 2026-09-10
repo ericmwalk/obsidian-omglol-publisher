@@ -1,6 +1,6 @@
 // picsuploader.ts
 
-import { App, Notice, TFile, MarkdownView, requestUrl, Editor } from "obsidian";
+import { App, Notice, TFile, MarkdownView, requestUrl, Editor, moment as obsidianMoment } from "obsidian";
 
 export interface ImageContext {
   file?: TFile;
@@ -8,7 +8,10 @@ export interface ImageContext {
   altText: string;
   caption: string;
 }
-declare const moment: any;
+
+// Obsidian bundles moment and exports the value, but its type loses its call
+// signature through the re-export — cast back to the real (type-only) shape.
+const moment = obsidianMoment as unknown as typeof import("moment");
 import { CombinedSettings } from "./types";
 import OmglolPublish from "./main";
 import exifr from "exifr"; // for EXIF log
@@ -145,7 +148,7 @@ export class PicsUploader {
       editor.setValue(updated);
 
       if (this.settings.deleteAfterUpload) {
-        await this.app.vault.delete(file);
+        await this.app.fileManager.trashFile(file);
       }
 
       new Notice(`Uploaded ${filename} ✅`);
@@ -520,7 +523,7 @@ export class PicsUploader {
   }
 
   // === Fetch current metadata for a pic (for editing UI) ===
-  public async fetchMetadata(picId: string): Promise<any | null> {
+  public async fetchMetadata(picId: string): Promise<Record<string, any> | null> {
     try {
       const resp = await requestUrl({
         url: `https://api.omg.lol/address/${this.settings.username}/pics/${picId}`,
