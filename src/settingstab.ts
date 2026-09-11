@@ -11,7 +11,7 @@ export class SettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName("omg.lol Plugin Settings").setHeading();
+    new Setting(containerEl).setName("omg.lol Plugin").setHeading();
 
     // === Shared OMG Settings ===
     new Setting(containerEl)
@@ -113,7 +113,7 @@ export class SettingsTab extends PluginSettingTab {
 
     // === paste.lol Settings ===
     if (this.plugin.settings.enablePastebin) {
-      new Setting(containerEl).setName("paste.lol Settings").setHeading();
+      new Setting(containerEl).setName("paste.lol").setHeading();
 
       new Setting(containerEl)
         .setName("Paste base URL")
@@ -131,7 +131,7 @@ export class SettingsTab extends PluginSettingTab {
 
     // === Status.lol Settings ===
     if (this.plugin.settings.enableStatusPoster) {
-      new Setting(containerEl).setName("Status Settings").setHeading();
+      new Setting(containerEl).setName("Status").setHeading();
 
       new Setting(containerEl)
         .setName("Default emoji")
@@ -209,7 +209,7 @@ export class SettingsTab extends PluginSettingTab {
 
     // === Weblog.lol Settings===
     if (this.plugin.settings.enableWeblog) {
-      new Setting(containerEl).setName("Weblog Settings").setHeading();
+      new Setting(containerEl).setName("Weblog").setHeading();
 
       new Setting(containerEl)
         .setName("Enable automatic renaming")
@@ -391,7 +391,7 @@ export class SettingsTab extends PluginSettingTab {
 
     // === some.pics Settings===
     if (this.plugin.settings.enablePics) {
-      new Setting(containerEl).setName("some.pics Settings").setHeading();
+      new Setting(containerEl).setName("some.pics").setHeading();
 
       new Setting(containerEl)
         .setName("Default tags")

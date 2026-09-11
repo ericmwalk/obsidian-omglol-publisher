@@ -1,11 +1,13 @@
-import { App, Notice, TFile, requestUrl } from "obsidian";
+import { App, Notice, TFile, requestUrl, moment as obsidianMoment, normalizePath } from "obsidian";
 import { CombinedSettings } from "./types";
 import { OmglolPublish } from "./main";
-import moment from "moment";
 import GraphemeSplitter from "grapheme-splitter";
 import { getDailyNote, createDailyNote, getAllDailyNotes } from "obsidian-daily-notes-interface";
 import { StatusPostModal } from "./statuspostmodal";
-import { normalizePath } from "obsidian";
+
+// Obsidian bundles moment and exports the value, but its type loses its call
+// signature through the re-export — cast back to the real (type-only) shape.
+const moment = obsidianMoment as unknown as typeof import("moment");
 
 
 export class StatusPublisher {
