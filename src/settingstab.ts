@@ -254,19 +254,6 @@ export class SettingsTab extends PluginSettingTab {
             })
         );
 
-      new Setting(containerEl)
-        .setName("Relative links")
-        .setDesc('Links between your notes omit the domain entirely, e.g. "/books" instead of "https://runs.lol/books". Handy if you expect to change domains later.')
-        .addToggle(toggle =>
-          toggle
-            .setValue(this.plugin.settings.weblogRelativeLinks ?? false)
-            .onChange(async (value) => {
-              this.plugin.settings.weblogRelativeLinks = value;
-              await this.plugin.saveSettings();
-              this.display();
-            })
-        );
-
       if (!this.plugin.settings.weblogRelativeLinks) {
         new Setting(containerEl)
           .setName("Weblog base URL")
@@ -281,6 +268,19 @@ export class SettingsTab extends PluginSettingTab {
               })
           );
       }
+
+      new Setting(containerEl)
+        .setName("Relative links")
+        .setDesc('Links between your notes omit the domain entirely, e.g. "/books" instead of "https://runs.lol/books".')
+        .addToggle(toggle =>
+          toggle
+            .setValue(this.plugin.settings.weblogRelativeLinks ?? false)
+            .onChange(async (value) => {
+              this.plugin.settings.weblogRelativeLinks = value;
+              await this.plugin.saveSettings();
+              this.display();
+            })
+        );
 
       new Setting(containerEl)
         .setName("Post path format override")
