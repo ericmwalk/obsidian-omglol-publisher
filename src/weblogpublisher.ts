@@ -805,8 +805,9 @@ private resolveWikilinks(body: string, sourceFilePath: string, pathFormat: strin
     const slug = fm?.slug?.trim();
 
     if (slug) {
-      const base = this.settings.weblogBaseUrl?.trim()
-        || `https://${this.settings.username}.weblog.lol`;
+      const base = this.settings.weblogRelativeLinks
+        ? "/"
+        : this.settings.weblogBaseUrl?.trim() || `https://${this.settings.username}.weblog.lol`;
       const isPage = fm?.type?.toLowerCase() === "page";
       const datePath = !isPage && fm?.date ? this.applyPhpDateFormat(pathFormat, String(fm.date)) : "";
       const url = this.joinUrlSegments(base, datePath, slug);

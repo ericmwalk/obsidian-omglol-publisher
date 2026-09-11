@@ -255,17 +255,32 @@ export class SettingsTab extends PluginSettingTab {
         );
 
       new Setting(containerEl)
-        .setName("Weblog base URL")
-        .setDesc("Only needed if you use a custom domain. Leave blank to use username.weblog.lol automatically. (e.g. https://runs.lol)")
-        .addText(text =>
-          text
-            .setPlaceholder("https://username.weblog.lol")
-            .setValue(this.plugin.settings.weblogBaseUrl || "")
+        .setName("Relative links")
+        .setDesc('Links between your notes omit the domain entirely, e.g. "/books" instead of "https://runs.lol/books". Handy if you expect to change domains later.')
+        .addToggle(toggle =>
+          toggle
+            .setValue(this.plugin.settings.weblogRelativeLinks ?? false)
             .onChange(async (value) => {
-              this.plugin.settings.weblogBaseUrl = value.trim().replace(/\/$/, "");
+              this.plugin.settings.weblogRelativeLinks = value;
               await this.plugin.saveSettings();
+              this.display();
             })
         );
+
+      if (!this.plugin.settings.weblogRelativeLinks) {
+        new Setting(containerEl)
+          .setName("Weblog base URL")
+          .setDesc("Only needed if you use a custom domain. Leave blank to use username.weblog.lol automatically. (e.g. https://runs.lol)")
+          .addText(text =>
+            text
+              .setPlaceholder("https://username.weblog.lol")
+              .setValue(this.plugin.settings.weblogBaseUrl || "")
+              .onChange(async (value) => {
+                this.plugin.settings.weblogBaseUrl = value.trim().replace(/\/$/, "");
+                await this.plugin.saveSettings();
+              })
+          );
+      }
 
       new Setting(containerEl)
         .setName("Post path format override")
