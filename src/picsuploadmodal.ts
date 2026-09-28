@@ -11,6 +11,8 @@ export class PicUploadModal extends Modal {
   description: string = "";
   tags: string = "";
   hidden: boolean = false;
+  postToMastodon: boolean = false;
+  wasOnMastodon: boolean = false;
   altText: string = "";
   previewUrl: string = ""; // for thumbnail
   remoteUrl?: string;
@@ -40,6 +42,8 @@ export class PicUploadModal extends Modal {
         ? existingData.tags.join(", ")
         : (existingData.tags || "");
       this.hidden = !!existingData.hide_from_public;
+      this.wasOnMastodon = existingData.mastodon?.state === "posted";
+      this.postToMastodon = this.wasOnMastodon;
       this.altText = existingData.alt_text || "";
 
       // ✅ Use API-provided URL directly
@@ -132,6 +136,14 @@ export class PicUploadModal extends Modal {
         })
       );
 
+    new Setting(contentEl)
+      .setName("Post to Mastodon")
+      .addToggle((toggle) =>
+        toggle.setValue(this.postToMastodon).onChange((value) => {
+          this.postToMastodon = value;
+        })
+      );
+
     // === Buttons ===
     new Setting(contentEl)
     .addButton((btn) =>
@@ -149,7 +161,8 @@ export class PicUploadModal extends Modal {
                 this.description,
                 this.hidden,
                 finalAlt,
-                this.tags
+                this.tags,
+                this.postToMastodon
               );
             } else if (this.file) {
               await this.uploader.uploadFile(
@@ -157,7 +170,8 @@ export class PicUploadModal extends Modal {
                 this.description,
                 this.hidden,
                 finalAlt,
-                this.tags
+                this.tags,
+                this.postToMastodon
               );
             } else if (this.picId) {
               await this.uploader.updateMetadata(
@@ -167,6 +181,12 @@ export class PicUploadModal extends Modal {
                 this.hidden,
                 finalAlt
               );
+
+              if (this.postToMastodon && !this.wasOnMastodon) {
+                await this.uploader.postToMastodon(this.picId);
+              } else if (!this.postToMastodon && this.wasOnMastodon) {
+                await this.uploader.removeFromMastodon(this.picId);
+              }
             }
 
             new Notice(this.file || this.remoteUrl ? "Uploaded ✅" : "Updated ✅");

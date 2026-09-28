@@ -164,7 +164,8 @@ export class PicsUploader {
       description: string = "",
       hidden?: boolean,
       altText?: string,
-      tags?: string
+      tags?: string,
+      postToMastodon: boolean = false
     ): Promise<string> {
       try {
         let uploadedUrl = "";
@@ -276,6 +277,11 @@ export class PicsUploader {
 
         if (putResp.status !== 200) {
           console.warn("Metadata update failed:", putResp);
+        }
+
+        // Cross-post after metadata so the post carries description/alt text
+        if (postToMastodon) {
+          await this.postToMastodon(picId);
         }
 
         // === Log all uploads (local or remote) ===
@@ -519,6 +525,56 @@ export class PicsUploader {
       new Notice("Update failed. See console.");
     } else {
       new Notice("Metadata updated ✅");
+    }
+  }
+
+  // === Cross-post a pic to Mastodon (uses the account linked on omg.lol) ===
+  public async postToMastodon(picId: string): Promise<void> {
+    try {
+      const resp = await requestUrl({
+        url: `https://api.omg.lol/address/${this.settings.username}/pics/${picId}/mastodon`,
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.settings.token}`,
+        },
+        throw: false,
+      });
+
+      if (resp.status !== 200) {
+        console.error("Mastodon cross-post failed:", resp);
+        new Notice(`Mastodon post failed: ${resp.json?.response?.message || resp.status}`);
+        return;
+      }
+
+      new Notice("Posted to Mastodon ✅");
+    } catch (err) {
+      console.error("Mastodon cross-post failed:", err);
+      new Notice("Mastodon post failed. See console.");
+    }
+  }
+
+  // === Remove a cross-posted pic from Mastodon ===
+  public async removeFromMastodon(picId: string): Promise<void> {
+    try {
+      const resp = await requestUrl({
+        url: `https://api.omg.lol/address/${this.settings.username}/pics/${picId}/mastodon`,
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${this.settings.token}`,
+        },
+        throw: false,
+      });
+
+      if (resp.status !== 200) {
+        console.error("Mastodon removal failed:", resp);
+        new Notice(`Mastodon removal failed: ${resp.json?.response?.message || resp.status}`);
+        return;
+      }
+
+      new Notice("Removed from Mastodon ✅");
+    } catch (err) {
+      console.error("Mastodon removal failed:", err);
+      new Notice("Mastodon removal failed. See console.");
     }
   }
 

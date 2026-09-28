@@ -59,6 +59,8 @@ Publish and manage your omg.lol presence directly from Obsidian. Write [weblog.l
 - Caption and alt text pre-filled from image metadata
 - Keep a log of uploaded pictures to map back if any go missing
 - Original files are kept in your vault after upload
+- Optionally cross-post a picture to Mastodon from the upload/edit window (off by default). Turning it off when editing removes the post from Mastodon. The post goes to whichever Mastodon account you've connected in your some.pics settings on omg.lol, so that has to be set up on the omg.lol website first
+- If auto-posting to Mastodon is turned on in your some.pics settings, every pic gets posted and this toggle has no effect. Turn auto-posting off on omg.lol if you want to choose per pic
 
 ### Paste.lol
 - Quickly create pastes from a note
