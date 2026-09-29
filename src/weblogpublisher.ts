@@ -54,7 +54,7 @@ export class WeblogPublisher {
 
   }
 
-  public async publishCurrentNote() {
+  public async publishCurrentNote(fromPrompt: boolean = false) {
     if (!this.settings.enableWeblog) {
       new Notice("Weblog publishing is disabled in settings.");
       return;
@@ -133,7 +133,15 @@ export class WeblogPublisher {
 
     if (unresolvedPublished.length > 0 || imageEmbeds.length > 0) {
       const proceed = await this.warnAndConfirm(unresolvedPublished, imageEmbeds);
-      if (!proceed) return;
+      if (!proceed) {
+        // Status was just written by the prompt — drop it so the note isn't marked published
+        if (fromPrompt) {
+          await this.app.fileManager.processFrontMatter(file, (fm) => {
+            delete fm.status;
+          });
+        }
+        return;
+      }
     }
 
     const titleLine = useTitle.length > 0 ? `Title: ${useTitle}\n` : "";
@@ -706,7 +714,7 @@ export class WeblogPublisher {
         else delete fm.tags;
       });
 
-      window.setTimeout(() => { void this.publishCurrentNote(); }, 300);
+      window.setTimeout(() => { void this.publishCurrentNote(true); }, 300);
     }, existing).open();
   }
 
@@ -967,14 +975,18 @@ private async warnAndConfirm(unresolvedLinks: string[], imageEmbeds: string[]): 
 
     const buttonRow = modal.contentEl.createDiv({ cls: "modal-button-container" });
 
+    // Closing with Esc or the X counts as cancel
+    let proceed = false;
+    modal.onClose = () => resolve(proceed);
+
     new ButtonComponent(buttonRow)
       .setButtonText("Cancel")
-      .onClick(() => { modal.close(); resolve(false); });
+      .onClick(() => modal.close());
 
     new ButtonComponent(buttonRow)
       .setButtonText("Publish Anyway")
       .setCta()
-      .onClick(() => { modal.close(); resolve(true); });
+      .onClick(() => { proceed = true; modal.close(); });
 
     modal.open();
   });
